@@ -12,7 +12,7 @@ To get started open a folder and either use the defaults or edit/remove them!
 
 You cannot remove a category in the middle of the process (yet) if it contains items so be careful!
 
-The special categories checkbox enables actions to be performed automatically after!
+The special categories checkbox enables actions to be performed automatically after! (They are ""Delete"" and ""Ignore"")
 
 Thanks for using Gallery Swiper
 - Nora J.F.";
@@ -23,6 +23,8 @@ Thanks for using Gallery Swiper
         List<(string, string)> sorted = [];
         // index via sorted.Count
         string[] filesToProcess = [];
+
+        // no idea if the picturebox actually supports them
         IEnumerable<string> allowedFileExtensions = [
             ".png",
             ".jpg",
@@ -30,7 +32,8 @@ Thanks for using Gallery Swiper
             ".jfif",
             ".gif",
             ".webp",
-            ".avif"
+            ".avif",
+            ".bmp"
         ];
 
         bool noWarning = true;
@@ -135,13 +138,16 @@ Thanks for using Gallery Swiper
 
         private void buttonRemove_Click(object sender, EventArgs e)
         {
-            if (listboxCategories.SelectedIndex == 1) return; // how
+            if (listboxCategories.SelectedIndex == -1) return; // how
             if (sorted.Count > 0 && sorted.Any(a => a.Item2 == categories[listboxCategories.SelectedIndex].Item1))
             {
                 MessageBox.Show("You can't remove an already populated category!", "No!");
                 return;
             }
-            listboxCategories.Items.RemoveAt(listboxCategories.SelectedIndex);
+            categories.RemoveAt(listboxCategories.SelectedIndex);
+            textboxCategory.Text = "";
+            textboxShortcut.Text = "";
+            currentShortcut = Keys.None;
         }
 
         private void listboxCategories_SelectedIndexChanged(object sender, EventArgs e)
@@ -207,7 +213,7 @@ Thanks for using Gallery Swiper
 
         private void UpdateLog()
         {
-            textboxLog.Text = $@"Progress: {sorted.Count}/{filesToProcess.Length} ({100.0d * sorted.Count / filesToProcess.Length}%)
+            textboxLog.Text = $@"Progress: {sorted.Count}/{filesToProcess.Length} ({(100.0d * sorted.Count / filesToProcess.Length):F2}%)
 Last few actions:
 {(sorted.Count > 0
     ? sorted
@@ -241,6 +247,8 @@ Last few actions:
             foreach (var sortTuple in sorted)
             {
                 if (checkboxSpecialCats.Checked && sortTuple.Item2 == "Ignore") continue;
+                string relName = Path.GetRelativePath(galleryFolderDialog.SelectedPath, sortTuple.Item1);
+                string catFolder = Path.Join(root, sortTuple.Item2);
                 textboxLog.Text += $"\n{
                     (checkboxShouldMove.Checked ? "Moving" : "Copying")
                 } {
@@ -249,6 +257,7 @@ Last few actions:
                     sortTuple.Item2
                 }...";
                 textboxLog.Refresh();
+                File.Copy(sortTuple.Item1, Path.Join(catFolder, relName));
             }
             if (!checkboxSpecialCats.Checked)
             {
