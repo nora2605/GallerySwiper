@@ -257,7 +257,8 @@ Last few actions:
                     sortTuple.Item2
                 }...";
                 textboxLog.Refresh();
-                File.Copy(sortTuple.Item1, Path.Join(catFolder, relName));
+                if (checkboxShouldMove.Checked) File.Move(sortTuple.Item1, Path.Join(catFolder, relName), true);
+                else File.Copy(sortTuple.Item1, Path.Join(catFolder, relName), true);
             }
             if (!checkboxSpecialCats.Checked)
             {
@@ -267,7 +268,7 @@ Last few actions:
             textboxLog.Text += "\n-------- Special Actions --------";
             if (categories.Any(a => a.Item1 == "Delete"))
             {
-                textboxLog.Text = "\nDeleting the \"Delete\" Directory...";
+                textboxLog.Text += "\nDeleting the \"Delete\" Directory...";
                 Directory.Delete(Path.Join(root, "Delete"), true);
             }
         }
