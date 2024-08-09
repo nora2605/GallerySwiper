@@ -243,6 +243,7 @@
             Controls.Add(listboxCategories);
             Controls.Add(buttonOpenFolder);
             Controls.Add(pictureBox);
+            MinimumSize = new Size(700, 450);
             Name = "MainForm";
             Text = "GallerySwiper";
             Click += ResetFocus;
