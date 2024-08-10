@@ -179,6 +179,7 @@ Thanks for using Gallery Swiper
                             a.ToLower().EndsWith(f)
                         ))
                         .ToArray();
+                sorted.Clear();
                 if (filesToProcess.Length == 0)
                 {
                     MessageBox.Show("No image files found under that path!", "Empty Result", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
