@@ -45,6 +45,8 @@
             outputFolderDialog = new FolderBrowserDialog();
             checkboxShouldMove = new CheckBox();
             checkboxSpecialCats = new CheckBox();
+            buttonSave = new Button();
+            buttonLoad = new Button();
             ((System.ComponentModel.ISupportInitialize)pictureBox).BeginInit();
             SuspendLayout();
             // 
@@ -189,7 +191,7 @@
             textboxLog.Location = new Point(844, 12);
             textboxLog.Name = "textboxLog";
             textboxLog.ReadOnly = true;
-            textboxLog.Size = new Size(239, 426);
+            textboxLog.Size = new Size(239, 397);
             textboxLog.TabIndex = 11;
             textboxLog.Text = "Progress will be shown here!";
             textboxLog.KeyDown += Any_KeyDown;
@@ -223,11 +225,37 @@
             checkboxSpecialCats.Text = "Special Categories";
             checkboxSpecialCats.UseVisualStyleBackColor = true;
             // 
+            // buttonSave
+            // 
+            buttonSave.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
+            buttonSave.Location = new Point(844, 415);
+            buttonSave.Name = "buttonSave";
+            buttonSave.Size = new Size(118, 23);
+            buttonSave.TabIndex = 14;
+            buttonSave.Text = "Save";
+            buttonSave.UseVisualStyleBackColor = true;
+            buttonSave.Click += buttonSave_Click;
+            buttonSave.KeyDown += Any_KeyDown;
+            // 
+            // buttonLoad
+            // 
+            buttonLoad.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
+            buttonLoad.Location = new Point(968, 415);
+            buttonLoad.Name = "buttonLoad";
+            buttonLoad.Size = new Size(115, 23);
+            buttonLoad.TabIndex = 15;
+            buttonLoad.Text = "Load";
+            buttonLoad.UseVisualStyleBackColor = true;
+            buttonLoad.Click += buttonLoad_Click;
+            buttonLoad.KeyDown += Any_KeyDown;
+            // 
             // MainForm
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(1095, 450);
+            Controls.Add(buttonLoad);
+            Controls.Add(buttonSave);
             Controls.Add(checkboxSpecialCats);
             Controls.Add(checkboxShouldMove);
             Controls.Add(textboxLog);
@@ -272,5 +300,7 @@
         private FolderBrowserDialog outputFolderDialog;
         private CheckBox checkboxShouldMove;
         private CheckBox checkboxSpecialCats;
+        private Button buttonSave;
+        private Button buttonLoad;
     }
 }

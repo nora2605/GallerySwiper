@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.Text;
 
 namespace GallerySwiper
 {
@@ -69,8 +70,12 @@ Thanks for using Gallery Swiper
                 sorted.Add((filesToProcess[sorted.Count], cat));
             }
 
-            LoadCurrentImage();
-            if (sorted.Count == filesToProcess.Length) MessageBox.Show("You're done! You can now press the \"Process\" Button or Undo with Ctrl+Z");
+            if (filesToProcess.Length != 0)
+            {
+                LoadCurrentImage();
+                if (sorted.Count == filesToProcess.Length)
+                    MessageBox.Show("You're done! You can now press the \"Process\" Button or Undo with Ctrl+Z");
+            }
             e.SuppressKeyPress = true;
         }
 
@@ -124,6 +129,8 @@ Thanks for using Gallery Swiper
                         .ToList();
                 }
                 categories[listboxCategories.SelectedIndex] = (textboxCategory.Text, currentShortcut);
+                buttonSubmit.Text = "Add";
+                buttonRemove.Enabled = false;
             }
             else
             {
@@ -168,24 +175,27 @@ Thanks for using Gallery Swiper
 
         private void buttonOpenFolder_Click(object sender, EventArgs e)
         {
-            if (galleryFolderDialog.ShowDialog() == DialogResult.OK)
+            if (galleryFolderDialog.ShowDialog() != DialogResult.OK) return;
+            LoadFiles();
+        }
+
+        private void LoadFiles()
+        {
+            labelCurrentFolder.Text = "Current Folder:\n" + galleryFolderDialog.SelectedPath;
+            this.Refresh();
+            filesToProcess =
+                Directory
+                    .EnumerateFiles(galleryFolderDialog.SelectedPath, "*", SearchOption.AllDirectories)
+                    .Where((a, _) => allowedFileExtensions.Any(f =>
+                        a.ToLower().EndsWith(f)
+                    ))
+                    .ToArray();
+            sorted.Clear();
+            if (filesToProcess.Length == 0)
             {
-                labelCurrentFolder.Text = "Current Folder:\n" + galleryFolderDialog.SelectedPath;
-                this.Refresh();
-                filesToProcess =
-                    Directory
-                        .EnumerateFiles(galleryFolderDialog.SelectedPath, "*", SearchOption.AllDirectories)
-                        .Where((a, _) => allowedFileExtensions.Any(f =>
-                            a.ToLower().EndsWith(f)
-                        ))
-                        .ToArray();
-                sorted.Clear();
-                if (filesToProcess.Length == 0)
-                {
-                    MessageBox.Show("No image files found under that path!", "Empty Result", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
-                }
-                LoadCurrentImage();
+                MessageBox.Show("No image files found under that path!", "Empty Result", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
             }
+            LoadCurrentImage();
         }
 
         private void LoadCurrentImage()
@@ -237,6 +247,7 @@ Last few actions:
             textboxLog.Text = "Progress:\n-------- Initialize --------";
             foreach (var category in categories)
             {
+                if (category.Item1 == "Ignore") continue;
                 Directory.CreateDirectory(Path.Join(root, category.Item1));
                 textboxLog.Text += $"\nCreated Directory {category.Item1}";
                 textboxLog.Refresh();
@@ -248,16 +259,21 @@ Last few actions:
                 if (checkboxSpecialCats.Checked && sortTuple.Item2 == "Ignore") continue;
                 string relName = Path.GetRelativePath(galleryFolderDialog.SelectedPath, sortTuple.Item1);
                 string catFolder = Path.Join(root, sortTuple.Item2);
-                textboxLog.Text += $"\n{
-                    (checkboxShouldMove.Checked ? "Moving" : "Copying")
-                } {
-                    Path.GetRelativePath(galleryFolderDialog.SelectedPath, sortTuple.Item1)
-                } to {
-                    sortTuple.Item2
-                }...";
+                textboxLog.Text += $"\n{(checkboxShouldMove.Checked ? "Moving" : "Copying")} {Path.GetRelativePath(galleryFolderDialog.SelectedPath, sortTuple.Item1)} to {sortTuple.Item2}...";
                 textboxLog.Refresh();
-                if (checkboxShouldMove.Checked) File.Move(sortTuple.Item1, Path.Join(catFolder, relName), true);
-                else File.Copy(sortTuple.Item1, Path.Join(catFolder, relName), true);
+                textboxLog.SelectionStart = textboxLog.TextLength - 1;
+                textboxLog.ScrollToCaret();
+                string fileDest = Path.Join(catFolder, relName);
+                Directory.CreateDirectory(Path.GetDirectoryName(fileDest) ?? "Ignore");
+                try
+                {
+                    if (checkboxShouldMove.Checked) File.Move(sortTuple.Item1, fileDest, true);
+                    else File.Copy(sortTuple.Item1, fileDest, true);
+                }
+                catch
+                {
+                    // ignore for now
+                }
             }
             if (!checkboxSpecialCats.Checked)
             {
@@ -268,8 +284,12 @@ Last few actions:
             if (categories.Any(a => a.Item1 == "Delete"))
             {
                 textboxLog.Text += "\nDeleting the \"Delete\" Directory...";
+                textboxLog.Refresh();
+                textboxLog.SelectionStart = textboxLog.TextLength - 1;
+                textboxLog.ScrollToCaret();
                 Directory.Delete(Path.Join(root, "Delete"), true);
             }
+            LoadFiles();
         }
 
         private void Shortcut_KeyDown(object sender, KeyEventArgs e)
@@ -318,6 +338,100 @@ Last few actions:
                 checkboxSpecialCats.Enabled = true;
             else
                 checkboxSpecialCats.Enabled = false;
+        }
+
+        private void buttonSave_Click(object sender, EventArgs e)
+        {
+            if (string.IsNullOrEmpty(galleryFolderDialog.SelectedPath)) return;
+
+            string outs = $"{galleryFolderDialog.SelectedPath}\n---Cat---";
+            foreach (var (n, s) in categories)
+            {
+                outs += $"\n{n}><{(int)s}";
+            }
+            outs += "\n---Sorted---";
+            foreach (var (p, d) in sorted)
+            {
+                outs += $"\n{p}><{d}";
+            }
+            var res = new SaveFileDialog()
+            {
+                Title = "Save Progress",
+                Filter = "TXT Files (*.txt)|*.txt",
+                FileName = "sorted.txt",
+                ValidateNames = true,
+                AddToRecent = false
+            };
+            if (res.ShowDialog() == DialogResult.OK)
+            {
+                File.WriteAllText(res.FileName, outs, Encoding.UTF8);
+            }
+        }
+
+        private void buttonLoad_Click(object sender, EventArgs e)
+        {
+            var res = new OpenFileDialog()
+            {
+                Title = "Load Progress",
+                Filter = "TXT Files (*.txt)|*.txt",
+                FileName = "sorted.txt",
+                ValidateNames = true,
+                AddToRecent = false
+            };
+            if (res.ShowDialog() != DialogResult.OK) return;
+
+            string[] ins = File.ReadAllLines(res.FileName, Encoding.UTF8);
+            galleryFolderDialog.SelectedPath = ins[0];
+            LoadFiles();
+            categories.Clear();
+            sorted.Clear();
+            bool catDone = false;
+
+            foreach (var l in ins[1..])
+            {
+                if (l == "---Cat---")
+                {
+                    catDone = false;
+                    continue;
+                }
+                if (l == "---Sorted---")
+                {
+                    catDone = true;
+                    continue;
+                }
+                string[] pd = l.Split("><");
+                if (pd.Length != 2)
+                {
+                    MessageBox.Show("Invalid Progress file");
+                    return;
+                }
+                if (catDone)
+                    sorted.Add((pd[0], pd[1]));
+                else
+                {
+                    bool v = int.TryParse(pd[1], out int key);
+                    if (!v)
+                    {
+                        MessageBox.Show("Invalid Progress file");
+                        return;
+                    }
+                    categories.Add((pd[0], (Keys)key));
+                }
+            }
+            // bring already sorted entries to the front
+
+            // remove all entries in sorted that aren't present,
+            // then append all of sorted to the front to match the indices and enable correct ctrl+z functionality
+            List<string> tmp = [..filesToProcess];
+            foreach (var (s, _) in sorted)
+            {
+                int i = tmp.IndexOf(s);
+                if (i == -1) sorted.RemoveAll(t => t.Item1 == s);
+                else tmp.RemoveAll(t => t == s);
+            }
+            filesToProcess = [.. sorted.Select(t => t.Item1), .. tmp];
+
+            LoadCurrentImage();
         }
     }
 }
