@@ -31,8 +31,6 @@ Thanks for using Gallery Swiper
             ".jpeg",
             ".jfif",
             ".gif",
-            ".webp",
-            ".avif",
             ".bmp"
         ];
 
@@ -176,9 +174,9 @@ Thanks for using Gallery Swiper
                 this.Refresh();
                 filesToProcess =
                     Directory
-                        .EnumerateFiles(galleryFolderDialog.SelectedPath, "", SearchOption.AllDirectories)
+                        .EnumerateFiles(galleryFolderDialog.SelectedPath, "*", SearchOption.AllDirectories)
                         .Where((a, _) => allowedFileExtensions.Any(f =>
-                            a.EndsWith(f)
+                            a.ToLower().EndsWith(f)
                         ))
                         .ToArray();
                 if (filesToProcess.Length == 0)
