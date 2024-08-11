@@ -28,6 +28,7 @@
         /// </summary>
         private void InitializeComponent()
         {
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(MainForm));
             pictureBox = new PictureBox();
             buttonOpenFolder = new Button();
             listboxCategories = new ListBox();
@@ -53,7 +54,9 @@
             // pictureBox
             // 
             pictureBox.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
-            pictureBox.BackColor = SystemColors.ButtonShadow;
+            pictureBox.BackColor = Color.FromArgb(224, 224, 224);
+            pictureBox.ErrorImage = (Image)resources.GetObject("pictureBox.ErrorImage");
+            pictureBox.InitialImage = (Image)resources.GetObject("pictureBox.InitialImage");
             pictureBox.Location = new Point(159, 12);
             pictureBox.Name = "pictureBox";
             pictureBox.Size = new Size(679, 426);
@@ -271,6 +274,7 @@
             Controls.Add(listboxCategories);
             Controls.Add(buttonOpenFolder);
             Controls.Add(pictureBox);
+            Icon = (Icon)resources.GetObject("$this.Icon");
             MinimumSize = new Size(700, 450);
             Name = "MainForm";
             Text = "GallerySwiper";

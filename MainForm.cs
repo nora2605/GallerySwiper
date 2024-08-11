@@ -35,7 +35,7 @@ Thanks for using Gallery Swiper
             ".bmp"
         ];
 
-        bool noWarning = true;
+        //bool noWarning = true;
 
         Keys currentShortcut = Keys.None;
 
@@ -200,23 +200,19 @@ Thanks for using Gallery Swiper
 
         private void LoadCurrentImage()
         {
-            try
+            if (sorted.Count < filesToProcess.Length)
             {
-                if (sorted.Count < filesToProcess.Length)
-                    pictureBox.ImageLocation = filesToProcess[sorted.Count];
-                else pictureBox.ImageLocation = "";
-            }
-            catch (Exception ex)
-            {
-                if (MessageBox.Show(
-                    "Below is the Stack trace of this Exception. You can close the Application now (Click Yes) and you probably should if you don't know what this means.\n\n" + ex.StackTrace,
-                    ex.Message,
-                    MessageBoxButtons.YesNo) == DialogResult.Yes
-                )
-                {
-                    Application.Exit();
+                pictureBox.SizeMode = PictureBoxSizeMode.CenterImage;
+                pictureBox.Image = pictureBox.InitialImage;
+                pictureBox.Refresh();
+                pictureBox.ImageLocation = filesToProcess[sorted.Count];
+                try { pictureBox.Load(); }
+                catch {
+                    pictureBox.Image = pictureBox.ErrorImage;
                 }
+                pictureBox.SizeMode = PictureBoxSizeMode.Zoom;
             }
+            else pictureBox.ImageLocation = "";
             UpdateLog();
         }
 
@@ -243,11 +239,18 @@ Last few actions:
 
         private void ProcessFiles(string root)
         {
-            Graphics g = pictureBox.CreateGraphics();
+            if (filesToProcess.Length != sorted.Count && !checkboxShouldMove.Checked)
+            {
+                DialogResult dr = MessageBox.Show("You didn't categorize all files! It may be easier to manage moving partial results instead of copying them! Do you want to switch to moving?", "Warning", MessageBoxButtons.YesNo);
+                if (dr == DialogResult.Yes)
+                    checkboxShouldMove.Checked = true;
+                else if (dr != DialogResult.No)
+                    return;
+            }
             textboxLog.Text = "Progress:\n-------- Initialize --------";
             foreach (var category in categories)
             {
-                if (category.Item1 == "Ignore") continue;
+                if (checkboxSpecialCats.Checked && category.Item1 == "Ignore") continue;
                 Directory.CreateDirectory(Path.Join(root, category.Item1));
                 textboxLog.Text += $"\nCreated Directory {category.Item1}";
                 textboxLog.Refresh();
@@ -270,26 +273,29 @@ Last few actions:
                     if (checkboxShouldMove.Checked) File.Move(sortTuple.Item1, fileDest, true);
                     else File.Copy(sortTuple.Item1, fileDest, true);
                 }
-                catch
+                // ignore when a source file might not be present anymore; happens when sort data is outdated etc.
+                catch (FileNotFoundException) { continue; }
+                catch (Exception e)
                 {
-                    // ignore for now
+                    DialogResult dr = MessageBox.Show($"Error while transferring file: {e.Message}\nIf you're getting more of these you can abort the process by clicking Yes.", "Error", MessageBoxButtons.YesNo);
+                    if (dr == DialogResult.Yes)
+                        return;
                 }
             }
-            if (!checkboxSpecialCats.Checked)
+            if (checkboxSpecialCats.Checked)
             {
-                MessageBox.Show("Done!", "Done!", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                return;
+                textboxLog.Text += "\n-------- Special Actions --------";
+                if (categories.Any(a => a.Item1 == "Delete"))
+                {
+                    textboxLog.Text += "\nDeleting the \"Delete\" Directory...";
+                    textboxLog.Refresh();
+                    textboxLog.SelectionStart = textboxLog.TextLength - 1;
+                    textboxLog.ScrollToCaret();
+                    Directory.Delete(Path.Join(root, "Delete"), true);
+                }
             }
-            textboxLog.Text += "\n-------- Special Actions --------";
-            if (categories.Any(a => a.Item1 == "Delete"))
-            {
-                textboxLog.Text += "\nDeleting the \"Delete\" Directory...";
-                textboxLog.Refresh();
-                textboxLog.SelectionStart = textboxLog.TextLength - 1;
-                textboxLog.ScrollToCaret();
-                Directory.Delete(Path.Join(root, "Delete"), true);
-            }
-            LoadFiles();
+            if (checkboxShouldMove.Checked) LoadFiles();
+            MessageBox.Show("Done!", "Done!", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
 
         private void Shortcut_KeyDown(object sender, KeyEventArgs e)
@@ -325,14 +331,14 @@ Last few actions:
 
         private void checkboxShouldMove_CheckedChanged(object sender, EventArgs e)
         {
-            if (checkboxShouldMove.Checked && noWarning)
-            {
-                if (MessageBox.Show("There is absolutely no warranty if data gets lost when moving instead of copying the files!", "Are you sure?", MessageBoxButtons.OKCancel, MessageBoxIcon.Warning) == DialogResult.Cancel)
-                {
-                    checkboxShouldMove.Checked = false;
-                }
-                else noWarning = false;
-            }
+            //if (checkboxShouldMove.Checked && noWarning)
+            //{
+            //    if (MessageBox.Show("There is absolutely no warranty if data gets lost when moving instead of copying the files!", "Are you sure?", MessageBoxButtons.OKCancel, MessageBoxIcon.Warning) == DialogResult.Cancel)
+            //    {
+            //        checkboxShouldMove.Checked = false;
+            //    }
+            //    else noWarning = false;
+            //}
 
             if (checkboxShouldMove.Checked)
                 checkboxSpecialCats.Enabled = true;
@@ -422,7 +428,7 @@ Last few actions:
 
             // remove all entries in sorted that aren't present,
             // then append all of sorted to the front to match the indices and enable correct ctrl+z functionality
-            List<string> tmp = [..filesToProcess];
+            List<string> tmp = [.. filesToProcess];
             foreach (var (s, _) in sorted)
             {
                 int i = tmp.IndexOf(s);
